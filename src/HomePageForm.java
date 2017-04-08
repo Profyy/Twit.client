@@ -1,69 +1,90 @@
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
 
 
-public class HomePageForm {
+@SuppressWarnings("serial")
+public class HomePageForm extends MyFrame {
 	 private JTextArea textArea;
-		private JScrollPane scrlText;
-	    private JButton btnQuit, btnWriteMsg;
-	    String uname = null;
-		ArrayList un = new ArrayList();
-		ArrayList msg = new ArrayList();
-		String asd = "Hello \n";
+	 private JScrollPane scrlText;
+	 private JButton btnQuit, btnWriteMsg, btnRefreshMsgs, btnFollowings;
+	 ServerConection serverConection;
 	
 	
-	public HomePageForm(String username) throws  IOException {
-//		uname = username;
-//		 for(int i = 0; i < 4 ; i ++) {
-//	        	un.add(TwitterClient.socketReader.readLine());
-//	        	msg.add(TwitterClient.socketReader.readLine());
-//	        	asd += un.get(i) + ":" + msg.get(i) + "." + "\n";
-//	        }
-		MyFrame myFrame = new MyFrame(uname,500,300);
-		myFrame.setLayout(new FlowLayout());
-		myFrame.setBackground(Color.white);
-		textArea = new JTextArea(asd, 25, 50);
+	public HomePageForm(String messages) throws IOException{
+		super("Profyy",300,275);
+		serverConection = TwitterClient.serverConection;
+		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		textArea = new JTextArea(messages, 25, 50);
+		textArea.setEditable(false);
 		textArea.setLineWrap(true);
 		scrlText = new JScrollPane(textArea);
 		scrlText.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		myFrame.getContentPane().add(scrlText);
+		btnFollowings = new JButton("Followings");
 		btnWriteMsg = new JButton("Write msg");
-        btnWriteMsg.addActionListener(
+		btnRefreshMsgs = new JButton("Refresh");
+		btnQuit = new JButton("Log-out");
+		this.add(btnFollowings);
+		this.add(scrlText);
+		this.add(btnWriteMsg);
+		this.add(btnRefreshMsgs);
+        this.add(btnQuit);
+        this.pack();
+        setLocationRelativeTo(null);
+        this.setVisible(true);
+        
+        btnFollowings.addActionListener(
+    			new ActionListener(){
+    				public void actionPerformed(ActionEvent e){
+    					try {
+							serverConection.getObjectOutputStream().writeInt(5);
+							serverConection.getObjectOutputStream().flush();
+							ArrayList usernames = 
+									(ArrayList) serverConection.getObjectInputStream().readObject();
+							new FollowingsForm(usernames);
+						} catch (IOException | ClassNotFoundException e1) {
+							e1.printStackTrace();
+						}
+    				}
+    			}
+    		);
+		
+		btnWriteMsg.addActionListener(
 			new ActionListener(){
 				public void actionPerformed(ActionEvent e){
-					System.exit(0);         
-				}
-			}
-		);
-
-		btnQuit = new JButton("Quit");
-        btnQuit.addActionListener(
-			new ActionListener(){
-				public void actionPerformed(ActionEvent e){
-					System.exit(0);         
+					new WriteMessageForm();
 				}
 			}
 		);
         
-		myFrame.getContentPane().add(scrlText);
-		myFrame.getContentPane().add(btnWriteMsg);
-        myFrame.getContentPane().add(btnQuit);
-		myFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        myFrame.pack(); // Adjusts frame to size of components
-        myFrame.setVisible(true);
+        btnRefreshMsgs.addActionListener(
+			new ActionListener(){
+				public void actionPerformed(ActionEvent e){
+					try {
+						serverConection.getObjectOutputStream().writeInt(3);
+						serverConection.getObjectOutputStream().flush();
+						String msgs = (String) serverConection.getObjectInputStream().readObject();
+						textArea.setText("");
+						textArea.setText(msgs);
+					} catch (IOException | ClassNotFoundException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		);
+
+        btnQuit.addActionListener(
+			new ActionListener(){
+				public void actionPerformed(ActionEvent e){
+					dispose();
+					new LoginForm();
+				}
+			}
+		);
 	}
 }
